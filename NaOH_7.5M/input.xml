@@ -1,0 +1,59 @@
+<simulation verbosity='high'>
+  <output prefix='simulation'>
+    <properties stride='4' filename='out'>  [ step, time{picosecond}, conserved, temperature{kelvin}, potential ] </properties>
+    <trajectory filename='pos' stride='4'> positions{angstrom} </trajectory>
+    <trajectory filename='committee_pot' stride='4' extra_type='committee_pot'> extras </trajectory>
+    <trajectory filename='committee_sigma' stride='4' extra_type='committee_uncertainty'> extras </trajectory>
+    <checkpoint stride='300'/>
+  </output>
+  <total_steps>400000</total_steps>
+  <total_time>172800</total_time>
+  <prng>
+    <seed>31415</seed>
+  </prng>
+  <ffcommittee name="committee">
+    <alpha> 1.0 </alpha>
+    <active_output> active </active_output>
+    <active_thresh units="electronvolt"> 1.0 </active_thresh>
+    <ffsocket name='nnpNa041' mode='unix' matching="any">
+        <address>nnpNa121A1</address> <latency> 2e-4 </latency>
+    </ffsocket>
+    <ffsocket name='nnpNa042' mode='unix' matching="any">
+        <address>nnpNa122A1</address> <latency> 2e-4 </latency>
+    </ffsocket>
+    <ffsocket name='nnpNa043' mode='unix' matching="any">
+        <address>nnpNa123A1</address> <latency> 2e-4 </latency>
+    </ffsocket>
+    <ffsocket name='nnpNa044' mode='unix' matching="any">
+        <address>nnpNa124A1</address> <latency> 2e-4 </latency>
+    </ffsocket>
+    <ffsocket mode='unix' matching='any' name='nnpNa045'>
+        <address>nnpNa125A1</address>
+         <latency>  2.00000000e-04</latency>
+      </ffsocket>
+    <ffsocket name='nnpNa046' mode='unix' matching="any">
+        <address>nnpNa126A1</address> <latency> 2e-4 </latency>
+    </ffsocket>
+  </ffcommittee>
+  <system>
+    <initialize nbeads='1'>
+      <file mode='xyz'> init.xyz </file>
+      <velocities mode='thermal' units='kelvin'> 300 </velocities>
+<cell mode='abc' units='angstrom'> [16.63,16.63,44.10] </cell>
+    </initialize>
+    <forces>
+      <force forcefield='committee'> </force>
+    </forces>P
+    <motion mode='dynamics'>
+      <dynamics mode='nvt'>
+        <timestep units='femtosecond'> 0.50 </timestep>
+        <thermostat mode='pile_g'>
+          <tau units='femtosecond'> 2000 </tau>
+        </thermostat>
+      </dynamics>
+    </motion>
+    <ensemble>
+      <temperature units='kelvin'> 300 </temperature>
+    </ensemble>
+  </system>
+</simulation>
