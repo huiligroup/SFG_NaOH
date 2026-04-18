@@ -43,7 +43,7 @@
     </initialize>
     <forces>
       <force forcefield='committee'> </force>
-    </forces>P
+    </forces>
     <motion mode='dynamics'>
       <dynamics mode='nvt'>
         <timestep units='femtosecond'> 0.50 </timestep>
