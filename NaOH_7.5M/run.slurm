@@ -23,13 +23,12 @@ cd "${SLURM_SUBMIT_DIR}"
 IPIPATH=/public/home/lihui_grp/baiying/i-pi/bin
 lmp=$(which lmp)
 
-echo "{\"init\",$(date -u)}" >> LIST
-grep '<step>' RESTART >> LIST 2>/dev/null
-
-if [ ! -f "RESTART"   ]
- then
+if [ ! -f "RESTART" ]; then
   cp input.xml RESTART
 fi
+
+echo "{\"init\",$(date -u)}" >> LIST
+grep '<step>' RESTART >> LIST 2>/dev/null
 
 python -u ${IPIPATH}/i-pi RESTART > log.ipi 2>&1 &
 sleep 10
@@ -40,8 +39,6 @@ mpirun -n 2 ${lmp} < ipi_md3.lmp > log.lmp3 2>&1 &
 mpirun -n 2 ${lmp} < ipi_md4.lmp > log.lmp4 2>&1 &
 mpirun -n 2 ${lmp} < ipi_md5.lmp > log.lmp5 2>&1 &
 mpirun -n 2 ${lmp} < ipi_md6.lmp > log.lmp6 2>&1
-
-wait
 
 sleep 10
 touch EXIT
