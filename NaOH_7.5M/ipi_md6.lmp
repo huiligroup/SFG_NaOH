@@ -35,9 +35,9 @@ thermo 1
 ###############################################################################
 # NN
 ###############################################################################
-pair_style nnp dir ${nnpDir} showew yes resetew yes maxew 100 cflength 1.8897261328 cfenergy 0.0367493254 emap "1:H,2:O,3:Na"
+pair_style hdnnp ${nnpCutoff} dir ${nnpDir} showew yes resetew yes maxew 100 cflength 1.8897261328 cfenergy 0.0367493254 
 
-pair_coeff * * ${nnpCutoff}
+pair_coeff * * H O Na
 
 fix 1 all ipi nnpNa126A1 32344 unix
 run 100000000
