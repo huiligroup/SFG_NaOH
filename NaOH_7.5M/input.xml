@@ -1,6 +1,6 @@
 <simulation verbosity='high'> #整个 i-pi 模拟的根节点
   <output prefix='simulation'> #所有输出文件名前缀
-    <properties stride='4' filename='out'>  [ step, time{picosecond}, conserved, temperature{kelvin}, potential ] </properties> #每 4 步输出一次系统性质到 simulation.out
+    <properties stride='4' filename='out'>  [ step, time{picosecond}, conserved{electronvolt}, temperature{kelvin}, potential{electronvolt} ] </properties> #每 4 步输出一次系统性质到 simulation.out
     <trajectory filename='pos' stride='4'> positions{angstrom} </trajectory> #每 4 步输出一次原子坐标
     <trajectory filename='committee_pot' stride='4' extra_type='committee_pot'> extras </trajectory> #每 4 步输出 committee 返回的额外信息里的 committee_pot
     <trajectory filename='committee_sigma' stride='4' extra_type='committee_uncertainty'> extras </trajectory> #每 4 步输出 committee 的不确定性指标
