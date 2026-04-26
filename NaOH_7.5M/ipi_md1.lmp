@@ -35,7 +35,7 @@ thermo 1
 ###############################################################################
 # NN
 ###############################################################################
-pair_style hdnnp ${nnpCutoff} dir ${nnpDir} showew yes resetew yes maxew 100 cflength 1.8897261328 cfenergy 0.0367493254 
+pair_style hdnnp ${nnpCutoff} dir ${nnpDir} showew no showewsum 5000 resetew yes maxew 100 cflength 1.8897261328 cfenergy 0.0367493254 
 
 pair_coeff * * H O Na
 
