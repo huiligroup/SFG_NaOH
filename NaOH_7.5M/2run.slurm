@@ -8,6 +8,7 @@
 #SBATCH --error=%j.err
 #SBATCH --output=%j.out
 #SBATCH --account=lihui_grp
+#SBATCH --signal=B:TERM@300
 
 ulimit -d unlimited
 ulimit -s unlimited
@@ -45,49 +46,61 @@ soft_exit() {
   echo "{\"soft_exit_signal\",$(date -u)}" >> LIST
   touch EXIT
 }
+
 trap soft_exit TERM INT
 
 # 启动 i-PI 主控程序
-python -u ${IPIPATH}/i-pi RESTART > log.ipi 2>&1 &
+python -u "${IPIPATH}/i-pi" RESTART > log.ipi 2>&1 &
 ipi_pid=$!
 
 sleep 10
 
 # 启动 6 个 LAMMPS/NNP 客户端
-mpirun -n 2 ${lmp} < ipi_md1.lmp > log.lmp1 2>&1 &
+mpirun -n 2 "${lmp}" < ipi_md1.lmp > log.lmp1 2>&1 &
 p1=$!
 
-mpirun -n 2 ${lmp} < ipi_md2.lmp > log.lmp2 2>&1 &
+mpirun -n 2 "${lmp}" < ipi_md2.lmp > log.lmp2 2>&1 &
 p2=$!
 
-mpirun -n 2 ${lmp} < ipi_md3.lmp > log.lmp3 2>&1 &
+mpirun -n 2 "${lmp}" < ipi_md3.lmp > log.lmp3 2>&1 &
 p3=$!
 
-mpirun -n 2 ${lmp} < ipi_md4.lmp > log.lmp4 2>&1 &
+mpirun -n 2 "${lmp}" < ipi_md4.lmp > log.lmp4 2>&1 &
 p4=$!
 
-mpirun -n 2 ${lmp} < ipi_md5.lmp > log.lmp5 2>&1 &
+mpirun -n 2 "${lmp}" < ipi_md5.lmp > log.lmp5 2>&1 &
 p5=$!
 
-mpirun -n 2 ${lmp} < ipi_md6.lmp > log.lmp6 2>&1 &
+mpirun -n 2 "${lmp}" < ipi_md6.lmp > log.lmp6 2>&1 &
 p6=$!
 
-# 等待 i-PI 正常完成 total_steps 或 total_time
-wait ${ipi_pid}
-ipi_status=$?
+# 等待 i-PI 正常完成 total_steps 或 total_time。
+# 如果 wait 被 Slurm 的 TERM 信号打断，但 i-PI 还活着，就继续等，
+# 避免 i-PI 没来得及写完 RESTART。
+while true; do
+  wait "${ipi_pid}"
+  ipi_status=$?
+
+  if kill -0 "${ipi_pid}" 2>/dev/null; then
+    echo "{\"ipi_wait_interrupted\",$(date -u)}" >> LIST
+    sleep 5
+  else
+    break
+  fi
+done
 
 # 等待 6 个 LAMMPS 客户端收尾退出
-wait ${p1}
+wait "${p1}"
 s1=$?
-wait ${p2}
+wait "${p2}"
 s2=$?
-wait ${p3}
+wait "${p3}"
 s3=$?
-wait ${p4}
+wait "${p4}"
 s4=$?
-wait ${p5}
+wait "${p5}"
 s5=$?
-wait ${p6}
+wait "${p6}"
 s6=$?
 
 # 正常结束后清理 EXIT，避免影响下一次续跑
@@ -100,7 +113,7 @@ echo "i-PI exit status: ${ipi_status}" >> LIST
 echo "LAMMPS exit status: ${s1} ${s2} ${s3} ${s4} ${s5} ${s6}" >> LIST
 
 # 如果 i-PI 或任意一个 LAMMPS 异常退出，则让 Slurm 看到非零退出状态
-if [ ${ipi_status} -ne 0 ] || [ ${s1} -ne 0 ] || [ ${s2} -ne 0 ] || [ ${s3} -ne 0 ] || [ ${s4} -ne 0 ] || [ ${s5} -ne 0 ] || [ ${s6} -ne 0 ]; then
+if [ "${ipi_status}" -ne 0 ] || [ "${s1}" -ne 0 ] || [ "${s2}" -ne 0 ] || [ "${s3}" -ne 0 ] || [ "${s4}" -ne 0 ] || [ "${s5}" -ne 0 ] || [ "${s6}" -ne 0 ]; then
   exit 1
 fi
 
