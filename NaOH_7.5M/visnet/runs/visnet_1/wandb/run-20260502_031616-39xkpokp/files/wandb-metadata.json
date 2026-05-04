@@ -1,0 +1,68 @@
+{
+  "os": "Linux-5.15.0-141-generic-x86_64-with-glibc2.35",
+  "python": "CPython 3.10.20",
+  "startedAt": "2026-05-02T03:16:16.683424Z",
+  "args": [
+    "--output-dir",
+    "NaOH_7.5M/visnet/runs/visnet_1",
+    "--epochs",
+    "100",
+    "--batch-size",
+    "8",
+    "--lr",
+    "0.0001",
+    "--num-layers",
+    "6",
+    "--cutoff",
+    "6.0",
+    "--device",
+    "cuda",
+    "--wandb",
+    "--wandb-project",
+    "naoh-visnet-eip",
+    "--wandb-name",
+    "visnet_1",
+    "--build-edges-if-missing",
+    "--early-stopping-monitor",
+    "val/force_mae",
+    "--edge-data",
+    "NaOH_7.5M/data/visnet/na12_ab_edges_cutoff6.0.pt",
+    "--max-num-neighbors",
+    "64"
+  ],
+  "program": "/inspire/ssd/project/materialscienceresearch/tanghaoyu-253107030016/SFG_NaOH/NaOH_7.5M/visnet/train.py",
+  "codePath": "NaOH_7.5M/visnet/train.py",
+  "codePathLocal": "NaOH_7.5M/visnet/train.py",
+  "git": {
+    "remote": "https://github.com/huiligroup/SFG_NaOH.git",
+    "commit": "3294a11f32f12c362fafe05070c95038ed365f8f"
+  },
+  "email": "253107030016@sii.edu.cn",
+  "root": "NaOH_7.5M/visnet/runs/visnet_1",
+  "host": "ed2--f95842662433-jsjusigvyr",
+  "executable": "/root/miniconda3/envs/ED/bin/python",
+  "cpu_count": 64,
+  "cpu_count_logical": 128,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "3838880616448",
+      "used": "2084288536576"
+    }
+  },
+  "memory": {
+    "total": "1081541984256"
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce RTX 4090",
+      "memoryTotal": "51527024640",
+      "cudaCores": 16384,
+      "architecture": "Ada",
+      "uuid": "GPU-7beba04e-581e-6b99-ab8d-3609aaee254f"
+    }
+  ],
+  "cudaVersion": "12.8",
+  "writerId": "ccfdkbnn46wz00ruwkapt28mzkzhft6i"
+}
