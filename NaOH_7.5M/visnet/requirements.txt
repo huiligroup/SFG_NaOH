@@ -1,0 +1,5 @@
+torch_geometric>=2.7.0
+ase>=3.28.0
+scikit-learn>=1.8.0
+scipy>=1.17.0
+wandb>=0.23.0
