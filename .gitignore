@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.DS_Store
+.idea/
+
+# Generated data and model outputs.
+NaOH_7.5M/data/
+NaOH_7.5M/visnet/runs/
+NaOH_7.5M/src/descriptor/*.pkl
+NaOH_7.5M/src/descriptor/represent_mol*/
+NaOH_7.5M/utils/descriptor_report*/
+NaOH_7.5M/utils/.matplotlib/
+NaOH_7.5M/utils/.cache/
+NaOH_7.5M/docs/*.pdf
