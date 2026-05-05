@@ -1,0 +1,10 @@
+{
+  "shifts": "NaOH_7.5M/src/lqve/data/shifts/one_cl_9115_visnet",
+  "output_dir": "NaOH_7.5M/src/lqve/results",
+  "run_name": "one_cl_9115_visnet",
+  "transitions": null,
+  "frame_axis": "index",
+  "plot_format": "png",
+  "report_title": "LQVE one_cl_9115 ViSNet Analysis",
+  "include_dvr_diagnostics": false
+}

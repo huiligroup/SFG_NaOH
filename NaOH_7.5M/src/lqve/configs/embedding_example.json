@@ -1,0 +1,22 @@
+{
+  "run_name": "one_cl_9115",
+  "reference_xyz": "NaOH_7.5M/src/lqve_old/ref/h2o_ref.xyz",
+  "system_xyz": "NaOH_7.5M/src/lqve_old/ref/one_cl_9115_ref.xyz",
+  "probe_indices": [0, 1, 2],
+  "modes": "NaOH_7.5M/src/lqve/references/modes/h2o_modes.npy",
+  "dvr_data": "NaOH_7.5M/src/lqve/data/dvr/naoh_3d_7_10_7",
+  "output_dir": "NaOH_7.5M/src/lqve/data/embedded_geometries/one_cl_9115",
+  "grid_unit": "bohr",
+  "mode_unit": "angstrom_per_bohr",
+  "coord_unit": "angstrom",
+  "frame_index": 0,
+  "centroid_weight": "mass",
+  "write_xyz": false,
+  "prefix": "embedded",
+  "reference_library": null,
+  "checkpoint": null,
+  "feature_data": null,
+  "mol_id": null,
+  "cell": null,
+  "reference_top_k": 5
+}

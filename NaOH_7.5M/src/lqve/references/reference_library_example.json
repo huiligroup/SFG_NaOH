@@ -1,0 +1,14 @@
+{
+  "feature_type": "visnet_scalar_x_before_energy_head",
+  "checkpoint": "NaOH_7.5M/visnet/runs/visnet_2/best.pt",
+  "references": [
+    {
+      "reference_id": "example_ref_0001",
+      "feature_file": "NaOH_7.5M/src/descriptor/represent_mol/rank_0001_mol_001_traj_a_frame_00024524/feature.npy",
+      "reference_xyz": "NaOH_7.5M/src/lqve/references/structures/example_ref_0001.xyz",
+      "modes": "NaOH_7.5M/src/lqve/references/modes/example_ref_0001_modes.npy",
+      "dvr_data": "NaOH_7.5M/src/lqve/data/dvr/example_ref_0001",
+      "reference_energies": "NaOH_7.5M/src/lqve/references/pes/example_ref_0001_reference_energies_hartree.npy"
+    }
+  ]
+}

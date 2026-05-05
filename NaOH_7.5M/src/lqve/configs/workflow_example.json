@@ -1,0 +1,92 @@
+{
+  "run_name": "na12_lqve_dynamic_visnet",
+  "lqve_root": "NaOH_7.5M/src/lqve",
+  "dynamic_reference": true,
+  "resume": true,
+  "overwrite": false,
+  "keep_intermediates": true,
+  "limit_frames": null,
+  "references": [
+    {
+      "reference_id": "example_ref_0001",
+      "pes": "NaOH_7.5M/src/lqve_old/get_DVR_points/energy_9115_minus_1_to_1_8000.dat",
+      "reference_xyz": "NaOH_7.5M/src/lqve/references/structures/example_ref_0001.xyz",
+      "modes": "NaOH_7.5M/src/lqve/references/modes/example_ref_0001_modes.npy",
+      "feature_file": "NaOH_7.5M/src/descriptor/represent_mol/rank_0001_mol_001_traj_a_frame_00024524/feature.npy",
+      "grid_unit": "bohr",
+      "mode_unit": "angstrom_per_bohr",
+      "dvr": {
+        "states": 80,
+        "coord_unit": "angstrom",
+        "energy_unit": "cm-1",
+        "dense_threshold": 512,
+        "solver_tol": 1.0e-10,
+        "modes": [
+          {
+            "name": "q1",
+            "lower": -0.7,
+            "upper": 0.7,
+            "sinc_points": 200,
+            "podvr_points": 7
+          },
+          {
+            "name": "q2",
+            "lower": -0.9,
+            "upper": 0.9,
+            "sinc_points": 200,
+            "podvr_points": 10
+          },
+          {
+            "name": "q3",
+            "lower": -0.6,
+            "upper": 0.6,
+            "sinc_points": 200,
+            "podvr_points": 7
+          }
+        ]
+      }
+    }
+  ],
+  "trajectories": [
+    {
+      "traj_id": "na12_a",
+      "path": "NaOH_7.5M/src/lqve/data/processed/na12_a.xyz",
+      "probe_indices": [444, 445, 446],
+      "mol_id": 148,
+      "feature_data": "NaOH_7.5M/data/visnet/na12_ab.pkl",
+      "frame_start": 0,
+      "frame_stop": null,
+      "frame_stride": 1,
+      "cell": [16.63, 16.63, 44.10]
+    }
+  ],
+  "reference_selection": {
+    "enabled": true,
+    "checkpoint": "NaOH_7.5M/visnet/runs/visnet_2/best.pt",
+    "device": "cuda",
+    "top_k": 5
+  },
+  "embedding": {
+    "grid_unit": "bohr",
+    "mode_unit": "angstrom_per_bohr",
+    "centroid_weight": "mass",
+    "write_xyz": false,
+    "prefix": "embedded"
+  },
+  "energy": {
+    "backend": "visnet",
+    "checkpoint": "NaOH_7.5M/visnet/runs/visnet_2/best.pt",
+    "device": "cuda",
+    "cell": [16.63, 16.63, 44.10],
+    "batch_size": 16,
+    "workers": 1,
+    "limit_geometries": null,
+    "keep_workdirs": false
+  },
+  "shift": {
+    "n_contract": 30,
+    "n_transitions": 6,
+    "subtract_mean": true,
+    "reference_key": null
+  }
+}

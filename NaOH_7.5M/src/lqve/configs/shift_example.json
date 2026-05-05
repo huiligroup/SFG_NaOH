@@ -1,0 +1,12 @@
+{
+  "dvr_data": "NaOH_7.5M/src/lqve/data/dvr/naoh_3d_7_10_7",
+  "qc_outputs": "NaOH_7.5M/src/lqve/data/qc_outputs/one_cl_9115_visnet",
+  "reference_energies": "NaOH_7.5M/src/lqve/references/pes/reference_grid_energies_hartree.npy",
+  "reference_key": null,
+  "reference_mode": "file",
+  "output_dir": "NaOH_7.5M/src/lqve/data/shifts",
+  "run_name": "one_cl_9115_visnet",
+  "n_contract": 30,
+  "n_transitions": 6,
+  "subtract_mean": true
+}

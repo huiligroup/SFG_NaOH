@@ -1,0 +1,11 @@
+{
+  "geometries": "NaOH_7.5M/src/lqve/data/embedded_geometries/one_cl_9115",
+  "output_dir": "NaOH_7.5M/src/lqve/data/qc_outputs/one_cl_9115_xtb",
+  "backend": "xtb",
+  "command": "xtb --gfn 2",
+  "batch_size": 1,
+  "workers": 4,
+  "resume": true,
+  "dry_run": false,
+  "keep_workdirs": true
+}

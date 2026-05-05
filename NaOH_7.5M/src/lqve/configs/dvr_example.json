@@ -1,0 +1,33 @@
+{
+  "run_name": "naoh_3d_7_10_7",
+  "pes": "NaOH_7.5M/src/lqve_old/get_DVR_points/energy_9115_minus_1_to_1_8000.dat",
+  "output_dir": "NaOH_7.5M/src/lqve/data/dvr/naoh_3d_7_10_7",
+  "states": 80,
+  "coord_unit": "angstrom",
+  "energy_unit": "cm-1",
+  "dense_threshold": 512,
+  "solver_tol": 1.0e-10,
+  "modes": [
+    {
+      "name": "q1",
+      "lower": -0.7,
+      "upper": 0.7,
+      "sinc_points": 200,
+      "podvr_points": 7
+    },
+    {
+      "name": "q2",
+      "lower": -0.9,
+      "upper": 0.9,
+      "sinc_points": 200,
+      "podvr_points": 10
+    },
+    {
+      "name": "q3",
+      "lower": -0.6,
+      "upper": 0.6,
+      "sinc_points": 200,
+      "podvr_points": 7
+    }
+  ]
+}
