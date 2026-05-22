@@ -1,2 +1,0 @@
-dataset train_frames=6494 val_frames=812 frame_stride=4 edge_data=NaOH_7.5M/data/visnet/na12_ab_edges_cutoff6.0.pt
-epoch=0 step=1 batch=99 train/loss=2.52243 train/energy_mae=0.119762 train/force_mae=0.0209204 train/energy_rmse=0.252667 train/force_rmse=0.0281909 train/force_nll=2.40213 train/evidence_reg=0.053277

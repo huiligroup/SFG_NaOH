@@ -2,7 +2,7 @@
   "geometries": "NaOH_7.5M/src/lqve/data/embedded_geometries/one_cl_9115",
   "output_dir": "NaOH_7.5M/src/lqve/data/qc_outputs/one_cl_9115_visnet",
   "backend": "visnet",
-  "checkpoint": "NaOH_7.5M/visnet/runs/visnet_2/best.pt",
+  "checkpoint": "NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt",
   "device": "cuda",
   "cell": [16.63, 16.63, 44.10],
   "batch_size": 16,

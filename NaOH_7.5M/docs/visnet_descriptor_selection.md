@@ -7,23 +7,22 @@
 原始轨迹位于：
 
 ```bash
-NaOH_7.5M/data/NVE/Na12/a
-NaOH_7.5M/data/NVE/Na12/b
+NaOH_7.5M/data/NVE/NaOH12
 ```
 
 训练和描述符脚本默认读取预处理后的 pkl：
 
 ```bash
-NaOH_7.5M/data/visnet/na12_ab.pkl
+NaOH_7.5M/data/visnet/naoh12.pkl
 ```
 
-描述符脚本把这个 pkl 当作已经采样好的数据源。如果 `NaOH_7.5M/data/visnet/na12_ab.pkl` 已经是每四帧提取一个结构，那么描述符脚本中的 `--frame-stride 1` 表示不再额外跳帧；`--frame-stride 2` 表示在这个 pkl 的基础上每隔一条记录再取一次。
+描述符脚本把这个 pkl 当作已经采样好的数据源。如果 `NaOH_7.5M/data/visnet/naoh12.pkl` 已经是每四帧提取一个结构，那么描述符脚本中的 `--frame-stride 1` 表示不再额外跳帧；`--frame-stride 2` 表示在这个 pkl 的基础上每隔一条记录再取一次。
 
 脚本会在输出 pkl 中记录 `source_frame_step_by_traj` 和 `frame_stride_on_pkl`，用于追踪原始 MD step 与描述符抽样之间的关系。
 
 ## 分子编号规则
 
-第一版采用固定原子编号追踪分子，也就是同一个分子 ID 在所有帧中始终对应同一组原子索引。默认分子编号来自原始 `NaOH04-pos-1.xyz` 的原子顺序：
+第一版采用固定原子编号追踪分子，也就是同一个分子 ID 在所有帧中始终对应同一组原子索引。默认分子编号来自原始 `NaOH-12-pos-1.xyz` 的原子顺序：
 
 - `0-147`：水分子，每个分子为 `O,H,H`。
 - `148-159`：NaOH 单元，每个分子为 `Na,O,H`。
@@ -56,8 +55,8 @@ molecule_feature = concat(x_atom_1, x_atom_2, x_atom_3)
 
 ```bash
 python NaOH_7.5M/src/descriptor/extract_mol_features.py \
-  --data NaOH_7.5M/data/visnet/na12_ab.pkl \
-  --checkpoint NaOH_7.5M/visnet/runs/visnet_2/best.pt \
+  --data NaOH_7.5M/data/visnet/naoh12.pkl \
+  --checkpoint NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt \
   --mol-ids 148,149,150 \
   --frame-stride 1 \
   --device cuda \
@@ -68,8 +67,8 @@ CPU 冒烟测试：
 
 ```bash
 python NaOH_7.5M/src/descriptor/extract_mol_features.py \
-  --data NaOH_7.5M/data/visnet/na12_ab.pkl \
-  --checkpoint NaOH_7.5M/visnet/runs/visnet_2/best.pt \
+  --data NaOH_7.5M/data/visnet/naoh12.pkl \
+  --checkpoint NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt \
   --mol-ids 148 \
   --limit-frames 2 \
   --device cpu \
@@ -143,7 +142,7 @@ NaOH_7.5M/src/descriptor/represent_mol
 
 ```text
 represent_mol/
-  rank_0001_mol_148_traj_a_frame_00000000/
+  rank_0001_mol_148_traj_NaOH12_frame_00000000/
     system.xyz
     feature.npy
     metadata.json

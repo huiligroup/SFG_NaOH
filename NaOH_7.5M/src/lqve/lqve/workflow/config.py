@@ -232,5 +232,29 @@ class WorkflowConfig:
         with Path(path).open("r", encoding="utf-8") as handle:
             return cls.from_dict(json.load(handle))
 
+    @classmethod
+    def from_toml(cls, path: str | Path) -> "WorkflowConfig":
+        try:
+            import tomllib
+        except ModuleNotFoundError:  # pragma: no cover - Python < 3.11 fallback.
+            try:
+                import tomli as tomllib  # type: ignore[no-redef]
+            except ModuleNotFoundError as exc:
+                raise ModuleNotFoundError(
+                    "Reading TOML workflow configs requires Python >= 3.11 or `pip install tomli`."
+                ) from exc
+        with Path(path).open("rb") as handle:
+            return cls.from_dict(tomllib.load(handle))
+
+    @classmethod
+    def from_file(cls, path: str | Path) -> "WorkflowConfig":
+        config_path = Path(path)
+        suffix = config_path.suffix.lower()
+        if suffix == ".toml":
+            return cls.from_toml(config_path)
+        if suffix == ".json":
+            return cls.from_json(config_path)
+        raise ValueError(f"Unsupported workflow config format {suffix!r}; use .toml or .json")
+
     def resolved_lqve_root(self) -> Path:
         return Path(self.lqve_root)

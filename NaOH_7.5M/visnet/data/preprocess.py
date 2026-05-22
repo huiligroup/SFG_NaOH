@@ -1,4 +1,4 @@
-"""Preprocess CP2K Na12 trajectories into a pickle dataset.
+"""Preprocess CP2K NaOH12 trajectories into a pickle dataset.
 
 The output is intentionally plain NumPy data so it is easy to inspect and can
 be consumed by either PyTorch Geometric training code or independent checks.
@@ -17,9 +17,9 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_TRAJECTORIES = ("a", "b")
-DEFAULT_SOURCE_ROOT = ROOT / "data" / "NVE" / "Na12"
-DEFAULT_OUTPUT = ROOT / "data" / "visnet" / "na12_ab.pkl"
+DEFAULT_TRAJECTORIES = ("NaOH12",)
+DEFAULT_SOURCE_ROOT = ROOT / "data" / "NVE"
+DEFAULT_OUTPUT = ROOT / "data" / "visnet" / "naoh12.pkl"
 HARTREE_PER_BOHR_TO_HARTREE_PER_ANGSTROM = 1.8897261246257702
 ELEMENT_Z = {"H": 1, "O": 8, "Na": 11}
 ENERGY_RE = re.compile(r"\bi\s*=\s*(\d+).*?\bE\s*=\s*([-+0-9.Ee]+)")
@@ -97,11 +97,23 @@ def split_labels(nframes: int) -> np.ndarray:
     return labels
 
 
+def _single_match(directory: Path, patterns: tuple[str, ...], label: str) -> Path:
+    matches: list[Path] = []
+    for pattern in patterns:
+        matches.extend(sorted(directory.glob(pattern)))
+    unique = list(dict.fromkeys(matches))
+    if not unique:
+        raise FileNotFoundError(f"No {label} file found in {directory}; tried patterns={patterns}")
+    if len(unique) > 1:
+        raise ValueError(f"Multiple {label} files found in {directory}: {unique}")
+    return unique[0]
+
+
 def process_trajectory(traj_dir: Path, name: str, check_energy: bool = True) -> dict[str, object]:
-    pos_file = traj_dir / "NaOH04-pos-1.xyz"
-    frc_file = traj_dir / "NaOH04-frc-1.xyz"
-    ener_file = traj_dir / "NaOH04-1.ener"
-    input_file = traj_dir / "input.inp"
+    pos_file = _single_match(traj_dir, ("*-pos-1.xyz",), "position XYZ")
+    frc_file = _single_match(traj_dir, ("*-frc-1.xyz",), "force XYZ")
+    ener_file = _single_match(traj_dir, ("*.ener",), "energy")
+    input_file = _single_match(traj_dir, ("*.inp",), "CP2K input")
     for path in (pos_file, frc_file, ener_file, input_file):
         if not path.exists():
             raise FileNotFoundError(path)

@@ -72,13 +72,13 @@ NaOH_7.5M/src/lqve/
 已有配置示例：
 
 ```text
+NaOH_7.5M/config/lqve_workflow_example.toml
 NaOH_7.5M/src/lqve/configs/dvr_example.json
 NaOH_7.5M/src/lqve/configs/embedding_example.json
 NaOH_7.5M/src/lqve/configs/qc_example_visnet.json
 NaOH_7.5M/src/lqve/configs/qc_example_xtb.json
 NaOH_7.5M/src/lqve/configs/shift_example.json
 NaOH_7.5M/src/lqve/configs/analysis_example.json
-NaOH_7.5M/src/lqve/configs/workflow_example.json
 ```
 
 ## 3. 单位约定
@@ -256,7 +256,7 @@ NaOH_7.5M/src/lqve/references/reference_library_example.json
 ```json
 {
   "reference_id": "example_ref_0001",
-  "feature_file": "NaOH_7.5M/src/descriptor/represent_mol/rank_0001_mol_001_traj_a_frame_00024524/feature.npy",
+  "feature_file": "NaOH_7.5M/src/descriptor/represent_mol/<new_reference>/feature.npy",
   "reference_xyz": "NaOH_7.5M/src/lqve/references/structures/example_ref_0001.xyz",
   "modes": "NaOH_7.5M/src/lqve/references/modes/example_ref_0001_modes.npy",
   "dvr_data": "NaOH_7.5M/src/lqve/data/dvr/example_ref_0001",
@@ -277,36 +277,36 @@ NaOH_7.5M/src/lqve/references/reference_library_example.json
 
 ### 6.2 动态选择命令
 
-如果当前 frame 来自 `NaOH_7.5M/data/visnet/na12_ab.pkl`，可以用 `--feature-data` 直接读取其中的 `pos/cell/z/species` 做 ViSNet 前向：
+如果当前 frame 来自 `NaOH_7.5M/data/visnet/naoh12.pkl`，可以用 `--feature-data` 直接读取其中的 `pos/cell/z/species` 做 ViSNet 前向：
 
 ```bash
 python NaOH_7.5M/src/lqve/scripts/02_build_embedded_geometries.py \
   --system-xyz NaOH_7.5M/src/lqve/data/processed/frame.xyz \
   --probe-indices 444,445,446 \
   --reference-library NaOH_7.5M/src/lqve/references/reference_library.json \
-  --checkpoint NaOH_7.5M/visnet/runs/visnet_2/best.pt \
-  --feature-data NaOH_7.5M/data/visnet/na12_ab.pkl \
+  --checkpoint NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt \
+  --feature-data NaOH_7.5M/data/visnet/naoh12.pkl \
   --frame-index 0 \
   --device cuda \
   --reference-top-k 5 \
   --output-dir NaOH_7.5M/src/lqve/data/embedded_geometries/frame_000000
 ```
 
-也可以使用 Na12 默认分子编号规则：
+也可以使用 NaOH12 默认分子编号规则：
 
 ```bash
 python NaOH_7.5M/src/lqve/scripts/02_build_embedded_geometries.py \
   --system-xyz NaOH_7.5M/src/lqve/data/processed/frame.xyz \
   --mol-id 148 \
   --reference-library NaOH_7.5M/src/lqve/references/reference_library.json \
-  --checkpoint NaOH_7.5M/visnet/runs/visnet_2/best.pt \
-  --feature-data NaOH_7.5M/data/visnet/na12_ab.pkl \
+  --checkpoint NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt \
+  --feature-data NaOH_7.5M/data/visnet/naoh12.pkl \
   --frame-index 0 \
   --device cuda \
   --output-dir NaOH_7.5M/src/lqve/data/embedded_geometries/frame_000000
 ```
 
-Na12 默认分子编号规则与 `src/descriptor` 保持一致：
+NaOH12 默认分子编号规则与 `src/descriptor` 保持一致：
 
 - `0-147`：水分子，原子顺序 `O,H,H`。
 - `148-159`：NaOH 单元，原子顺序 `Na,O,H`。
@@ -343,7 +343,7 @@ ViSNet 推荐命令：
 python NaOH_7.5M/src/lqve/scripts/03_run_qc_energies.py \
   --geometries NaOH_7.5M/src/lqve/data/embedded_geometries/frame_000000 \
   --backend visnet \
-  --checkpoint NaOH_7.5M/visnet/runs/visnet_2/best.pt \
+  --checkpoint NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt \
   --cell 16.63,16.63,44.10 \
   --device cuda \
   --batch-size 16 \
@@ -629,15 +629,15 @@ python NaOH_7.5M/src/lqve/scripts/run_lqve_workflow.py --help
 
 ```bash
 python NaOH_7.5M/src/lqve/scripts/run_lqve_workflow.py \
-  --config NaOH_7.5M/src/lqve/configs/workflow_example.json
+  --config NaOH_7.5M/config/lqve_workflow_example.toml
 ```
 
 smoke 测试时限制 frame 数：
 
 ```bash
 python NaOH_7.5M/src/lqve/scripts/run_lqve_workflow.py \
-  --config NaOH_7.5M/src/lqve/configs/workflow_example.json \
-  --run-name na12_lqve_smoke \
+  --config NaOH_7.5M/config/lqve_workflow_example.toml \
+  --run-name naoh12_lqve_smoke \
   --limit-frames 1
 ```
 
@@ -645,15 +645,17 @@ python NaOH_7.5M/src/lqve/scripts/run_lqve_workflow.py \
 
 ```bash
 python NaOH_7.5M/src/lqve/scripts/run_lqve_workflow.py \
-  --config NaOH_7.5M/src/lqve/configs/workflow_example.json \
+  --config NaOH_7.5M/config/lqve_workflow_example.toml \
   --overwrite
 ```
 
 总控配置示例：
 
 ```text
-NaOH_7.5M/src/lqve/configs/workflow_example.json
+NaOH_7.5M/config/lqve_workflow_example.toml
 ```
+
+总控入口支持 `.toml` 和 `.json`，正式使用推荐 `.toml`。顶层 `NaOH_7.5M/config` 是用户集中管理运行设置的位置；`NaOH_7.5M/src/lqve/configs` 只保留模块内部示例或旧接口兼容文件。Python 3.11 及以上可直接读取 TOML；如果运行环境是 Python 3.10，需要先安装 `tomli`。
 
 核心字段：
 
@@ -722,7 +724,7 @@ NaOH_7.5M/src/lqve/data/workflows/<run_name>/frame_registry.json
 ```python
 from lqve.workflow import WorkflowConfig, run_lqve_workflow
 
-config = WorkflowConfig.from_json("NaOH_7.5M/src/lqve/configs/workflow_example.json")
+config = WorkflowConfig.from_file("NaOH_7.5M/config/lqve_workflow_example.toml")
 result = run_lqve_workflow(config)
 print(result.all_frequencies_csv)
 ```
@@ -745,7 +747,7 @@ from lqve import WorkflowConfig, run_lqve_workflow
 
 ```json
 {
-  "run_name": "na12_lqve_dynamic_visnet",
+  "run_name": "naoh12_lqve_dynamic_visnet",
   "lqve_root": "NaOH_7.5M/src/lqve",
   "dynamic_reference": true,
   "resume": true,
@@ -758,7 +760,7 @@ from lqve import WorkflowConfig, run_lqve_workflow
       "pes": "NaOH_7.5M/src/lqve/references/pes/ref_0001_pes.dat",
       "reference_xyz": "NaOH_7.5M/src/lqve/references/structures/ref_0001.xyz",
       "modes": "NaOH_7.5M/src/lqve/references/modes/ref_0001_modes.npy",
-      "feature_file": "NaOH_7.5M/src/descriptor/represent_mol/rank_0001_mol_001_traj_a_frame_00024524/feature.npy",
+      "feature_file": "NaOH_7.5M/src/descriptor/represent_mol/<new_reference>/feature.npy",
       "grid_unit": "bohr",
       "mode_unit": "angstrom_per_bohr",
       "dvr": {
@@ -777,11 +779,11 @@ from lqve import WorkflowConfig, run_lqve_workflow
   ],
   "trajectories": [
     {
-      "traj_id": "na12_a",
-      "path": "NaOH_7.5M/src/lqve/data/processed/na12_a.xyz",
+      "traj_id": "NaOH12",
+      "path": "NaOH_7.5M/data/NVE/NaOH12/NaOH-12-pos-1.xyz",
       "probe_indices": [444, 445, 446],
       "mol_id": 148,
-      "feature_data": "NaOH_7.5M/data/visnet/na12_ab.pkl",
+      "feature_data": "NaOH_7.5M/data/visnet/naoh12.pkl",
       "frame_start": 0,
       "frame_stop": null,
       "frame_stride": 1,
@@ -790,7 +792,7 @@ from lqve import WorkflowConfig, run_lqve_workflow
   ],
   "reference_selection": {
     "enabled": true,
-    "checkpoint": "NaOH_7.5M/visnet/runs/visnet_2/best.pt",
+    "checkpoint": "NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt",
     "device": "cuda",
     "top_k": 5
   },
@@ -802,7 +804,7 @@ from lqve import WorkflowConfig, run_lqve_workflow
   },
   "energy": {
     "backend": "visnet",
-    "checkpoint": "NaOH_7.5M/visnet/runs/visnet_2/best.pt",
+    "checkpoint": "NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt",
     "device": "cuda",
     "cell": [16.63, 16.63, 44.10],
     "batch_size": 16,
@@ -832,8 +834,8 @@ from lqve import WorkflowConfig, run_lqve_workflow
 
 ```json
 {
-  "traj_id": "na12_a",
-  "path": "NaOH_7.5M/src/lqve/data/processed/na12_a.xyz",
+  "traj_id": "NaOH12",
+  "path": "NaOH_7.5M/data/NVE/NaOH12/NaOH-12-pos-1.xyz",
   "probe_indices": [444, 445, 446],
   "reference_id": "ref_0001",
   "frame_start": 0,
@@ -974,8 +976,8 @@ python NaOH_7.5M/src/lqve/scripts/02_build_embedded_geometries.py \
   --system-xyz NaOH_7.5M/src/lqve/data/processed/frame_000000.xyz \
   --probe-indices 444,445,446 \
   --reference-library NaOH_7.5M/src/lqve/references/reference_library.json \
-  --checkpoint NaOH_7.5M/visnet/runs/visnet_2/best.pt \
-  --feature-data NaOH_7.5M/data/visnet/na12_ab.pkl \
+  --checkpoint NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt \
+  --feature-data NaOH_7.5M/data/visnet/naoh12.pkl \
   --frame-index 0 \
   --device cuda \
   --reference-top-k 5 \
@@ -992,7 +994,7 @@ python NaOH_7.5M/src/lqve/scripts/02_build_embedded_geometries.py \
 python NaOH_7.5M/src/lqve/scripts/03_run_qc_energies.py \
   --geometries NaOH_7.5M/src/lqve/data/embedded_geometries/dynamic_run \
   --backend visnet \
-  --checkpoint NaOH_7.5M/visnet/runs/visnet_2/best.pt \
+  --checkpoint NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt \
   --cell 16.63,16.63,44.10 \
   --device cuda \
   --batch-size 16 \
@@ -1054,7 +1056,7 @@ Selected reference is missing LQVE assets [...]
 
 ### cell 缺失
 
-从 `--system-xyz` 直接提取 ViSNet 特征时需要 `--cell`。如果使用 `--feature-data NaOH_7.5M/data/visnet/na12_ab.pkl`，cell 会从 pkl 中读取。
+从 `--system-xyz` 直接提取 ViSNet 特征时需要 `--cell`。如果使用 `--feature-data NaOH_7.5M/data/visnet/naoh12.pkl`，cell 会从 pkl 中读取。
 
 ### probe species 顺序不一致
 

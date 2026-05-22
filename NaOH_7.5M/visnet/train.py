@@ -1,4 +1,4 @@
-"""Train or smoke-test ViSNet + evidential force uncertainty on Na12 data."""
+"""Train or smoke-test ViSNet + evidential force uncertainty on NaOH data."""
 
 from __future__ import annotations
 
@@ -15,15 +15,54 @@ if __package__ in {None, ""}:
     import sys
 
     sys.path.append(str(Path(__file__).resolve().parents[1]))
+    from visnet.checkpoint import torch_load_checkpoint
     from visnet.data.dataset import NaOHDataset, collate_frames
-    from visnet.data.precompute_edges import build_edge_store, default_edge_path, selected_indices
+    from visnet.data.precompute_edges import (
+        default_edge_path,
+        ensure_edge_store,
+        load_edge_store_if_valid,
+        selected_indices,
+    )
     from visnet.losses import eip_loss
     from visnet.model import VisNetEIP
 else:
+    from .checkpoint import torch_load_checkpoint
     from .data.dataset import NaOHDataset, collate_frames
-    from .data.precompute_edges import build_edge_store, default_edge_path, selected_indices
+    from .data.precompute_edges import default_edge_path, ensure_edge_store, load_edge_store_if_valid, selected_indices
     from .losses import eip_loss
     from .model import VisNetEIP
+
+
+def load_train_config(path: Path | None) -> dict[str, Any]:
+    if path is None:
+        return {}
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # pragma: no cover
+        import tomli as tomllib  # type: ignore[no-redef]
+    with path.open("rb") as handle:
+        data = tomllib.load(handle)
+    section = data.get("train", data)
+    if not isinstance(section, dict):
+        raise ValueError(f"Expected a [train] table in {path}")
+    return dict(section)
+
+
+def apply_config_defaults(parser: argparse.ArgumentParser, config_values: dict[str, Any]) -> None:
+    actions = {action.dest: action for action in parser._actions if action.dest != "help"}
+    unknown = sorted(set(config_values).difference(actions))
+    if unknown:
+        raise ValueError(f"Unknown train config keys: {unknown}")
+    converted: dict[str, Any] = {}
+    for key, value in config_values.items():
+        action = actions[key]
+        if value is None:
+            converted[key] = None
+        elif action.type is Path:
+            converted[key] = Path(value)
+        else:
+            converted[key] = value
+    parser.set_defaults(**converted)
 
 
 def move_batch(batch: dict, device: torch.device) -> dict:
@@ -303,19 +342,39 @@ def init_wandb(args: argparse.Namespace, model: VisNetEIP) -> Any | None:
     return run
 
 
+def load_initial_weights(model: VisNetEIP, checkpoint_path: Path, device: torch.device) -> None:
+    checkpoint = torch_load_checkpoint(checkpoint_path, device=device)
+    state = checkpoint.get("model_state_dict", checkpoint)
+    model.load_state_dict(state, strict=True)
+    print(
+        f"initialized_from_checkpoint={checkpoint_path} "
+        f"epoch={checkpoint.get('epoch')} train_step={checkpoint.get('train_step')}"
+    )
+
+
 def load_edge_store(args: argparse.Namespace) -> tuple[dict | None, Path | None]:
     edge_path = args.edge_data if args.edge_data is not None else default_edge_path(args.data, args.cutoff)
-    if edge_path.exists():
-        store = torch.load(edge_path, map_location="cpu", weights_only=False)
+    store, reason = load_edge_store_if_valid(
+        edge_path=edge_path,
+        data_path=args.data,
+        cutoff=args.cutoff,
+        max_num_neighbors=args.max_num_neighbors,
+        frame_stride=args.frame_stride,
+        splits={"train", "val", "test"},
+        limit=args.edge_build_limit,
+    )
+    if store is not None:
         print(
-            f"loaded_edge_data={edge_path} frames={len(store['frame_indices'])} "
+            f"loaded_edge_data={edge_path} reason={reason} frames={len(store['frame_indices'])} "
             f"avg_neighbors={store.get('stats', {}).get('average_neighbors', float('nan')):.3f}"
         )
         return store, edge_path
+    if edge_path.exists():
+        print(f"edge_data_invalid={edge_path} reason={reason}")
     if not args.build_edges_if_missing:
-        print(f"edge_data_missing={edge_path}; using runtime no_grad neighbor construction")
+        print(f"edge_data_runtime_fallback={edge_path}; using runtime no_grad neighbor construction")
         return None, edge_path
-    store = build_edge_store(
+    store, _, _ = ensure_edge_store(
         data_path=args.data,
         output_path=edge_path,
         cutoff=args.cutoff,
@@ -323,6 +382,7 @@ def load_edge_store(args: argparse.Namespace) -> tuple[dict | None, Path | None]
         frame_stride=args.frame_stride,
         splits={"train", "val", "test"},
         limit=args.edge_build_limit,
+        force_rebuild=False,
     )
     return store, edge_path
 
@@ -360,11 +420,17 @@ def report_edge_coverage(edge_store: dict | None, args: argparse.Namespace) -> N
 
 
 def main() -> None:
+    config_parser = argparse.ArgumentParser(add_help=False)
+    config_parser.add_argument("--config", type=Path, default=None)
+    config_args, _ = config_parser.parse_known_args()
+    config_values = load_train_config(config_args.config)
+
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", type=Path, default=config_args.config, help="Optional TOML config; reads [train].")
     parser.add_argument(
         "--data",
         type=Path,
-        default=Path(__file__).resolve().parents[1] / "data" / "visnet" / "na12_ab.pkl",
+        default=Path(__file__).resolve().parents[1] / "data" / "visnet" / "naoh12.pkl",
     )
     parser.add_argument("--output-dir", type=Path, default=Path(__file__).resolve().parent / "runs" / "smoke")
     parser.add_argument("--epochs", type=int, default=1)
@@ -373,39 +439,69 @@ def main() -> None:
     parser.add_argument("--limit-frames", type=int, default=None)
     parser.add_argument("--frame-stride", type=int, default=4)
     parser.add_argument("--batch-size", type=int, default=1)
+    parser.add_argument("--grad-accumulation-steps", type=int, default=1)
     parser.add_argument("--lr", type=float, default=1.0e-4)
     parser.add_argument("--force-weight", type=float, default=1.0)
     parser.add_argument("--reg-weight", type=float, default=1.0e-2)
     parser.add_argument("--quantile", type=float, default=0.5)
     parser.add_argument("--hidden-channels", type=int, default=64)
-    parser.add_argument("--num-layers", type=int, default=3)
+    parser.add_argument("--num-layers", type=int, default=6)
     parser.add_argument("--num-heads", type=int, default=8)
     parser.add_argument("--num-rbf", type=int, default=32)
     parser.add_argument("--cutoff", type=float, default=5.0)
     parser.add_argument("--max-num-neighbors", type=int, default=64)
     parser.add_argument("--edge-data", type=Path, default=None)
-    parser.add_argument("--build-edges-if-missing", action="store_true")
+    parser.add_argument("--build-edges-if-missing", dest="build_edges_if_missing", action="store_true")
+    parser.add_argument("--no-build-edges-if-missing", dest="build_edges_if_missing", action="store_false")
+    parser.set_defaults(build_edges_if_missing=False)
     parser.add_argument("--edge-build-limit", type=int, default=None)
     parser.add_argument("--grad-clip", type=float, default=10.0)
+    parser.add_argument("--gradient-checkpointing", dest="gradient_checkpointing", action="store_true")
+    parser.add_argument("--no-gradient-checkpointing", dest="gradient_checkpointing", action="store_false")
+    parser.set_defaults(gradient_checkpointing=False)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--batches-per-step", type=int, default=100)
     parser.add_argument("--val-interval-steps", type=int, default=10)
-    parser.add_argument("--no-val", action="store_true")
+    parser.add_argument("--no-val", dest="no_val", action="store_true")
+    parser.add_argument("--val", dest="no_val", action="store_false")
+    parser.set_defaults(no_val=False)
     parser.add_argument("--early-stopping-patience", type=int, default=20)
     parser.add_argument("--early-stopping-min-delta", type=float, default=0.0)
     parser.add_argument("--early-stopping-monitor", default="val/force_mae")
-    parser.add_argument("--wandb", action="store_true", help="Enable Weights & Biases logging.")
+    parser.add_argument("--wandb", dest="wandb", action="store_true", help="Enable Weights & Biases logging.")
+    parser.add_argument("--no-wandb", dest="wandb", action="store_false", help="Disable Weights & Biases logging.")
+    parser.set_defaults(wandb=False)
     parser.add_argument("--wandb-project", default="naoh-visnet-eip")
     parser.add_argument("--wandb-entity", default=None)
     parser.add_argument("--wandb-name", default=None)
     parser.add_argument("--wandb-mode", default="online", choices=("online", "offline", "disabled"))
-    parser.add_argument("--wandb-watch", action="store_true", help="Log gradients/parameters with wandb.watch.")
+    parser.add_argument(
+        "--wandb-watch",
+        dest="wandb_watch",
+        action="store_true",
+        help="Log gradients/parameters with wandb.watch.",
+    )
+    parser.add_argument("--no-wandb-watch", dest="wandb_watch", action="store_false")
+    parser.set_defaults(wandb_watch=False)
     parser.add_argument("--wandb-watch-log", default="gradients", choices=("gradients", "parameters", "all"))
+    parser.add_argument(
+        "--init-checkpoint",
+        type=Path,
+        default=None,
+        help="Load model weights from an existing checkpoint before training on the current dataset.",
+    )
+    apply_config_defaults(parser, config_values)
     args = parser.parse_args()
+    args.data = Path(args.data)
+    args.output_dir = Path(args.output_dir)
+    args.edge_data = None if args.edge_data is None else Path(args.edge_data)
+    args.init_checkpoint = None if args.init_checkpoint is None else Path(args.init_checkpoint)
     if args.batches_per_step < 1:
         raise ValueError("--batches-per-step must be >= 1")
     if args.val_interval_steps < 1:
         raise ValueError("--val-interval-steps must be >= 1")
+    if args.grad_accumulation_steps < 1:
+        raise ValueError("--grad-accumulation-steps must be >= 1")
 
     edge_store, edge_path = load_edge_store(args)
     report_edge_coverage(edge_store, args)
@@ -454,7 +550,10 @@ def main() -> None:
         max_num_neighbors=args.max_num_neighbors,
         mean=mean,
         std=std,
+        gradient_checkpointing=args.gradient_checkpointing,
     ).to(device)
+    if args.init_checkpoint is not None:
+        load_initial_weights(model, args.init_checkpoint, device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -467,29 +566,42 @@ def main() -> None:
     print(
         f"dataset train_frames={len(train_dataset)} "
         f"val_frames={0 if val_dataset is None else len(val_dataset)} frame_stride={args.frame_stride} "
-        f"edge_data={'runtime' if edge_store is None else edge_path}"
+        f"edge_data={'runtime' if edge_store is None else edge_path} "
+        f"batch_size={args.batch_size} grad_accumulation_steps={args.grad_accumulation_steps} "
+        f"gradient_checkpointing={args.gradient_checkpointing}"
     )
     try:
         for epoch in range(args.epochs):
             model.train()
             epoch_metrics = MetricAccumulator()
             step_metrics = MetricAccumulator()
+            optimizer.zero_grad(set_to_none=True)
             for batch_idx, batch in enumerate(train_loader):
                 if args.limit_batches is not None and batch_idx >= args.limit_batches:
                     break
                 batch = move_batch(batch, device)
-                losses, out = compute_losses(model, batch, args)
-                optimizer.zero_grad(set_to_none=True)
-                losses["loss"].backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
-                optimizer.step()
+                try:
+                    losses, out = compute_losses(model, batch, args)
+                except torch.OutOfMemoryError as exc:
+                    raise torch.OutOfMemoryError(
+                        "CUDA OOM during forward/loss computation. "
+                        "Try smaller --batch-size, larger --grad-accumulation-steps, "
+                        "--gradient-checkpointing, or lower --max-num-neighbors."
+                    ) from exc
+                (losses["loss"] / args.grad_accumulation_steps).backward()
 
                 epoch_metrics.update(losses, out, batch)
                 step_metrics.update(losses, out, batch)
 
-                is_step_boundary = step_metrics.batch_count >= args.batches_per_step
                 is_epoch_last = batch_idx + 1 == len(train_loader)
                 is_limited_last = args.limit_batches is not None and batch_idx + 1 >= args.limit_batches
+                is_accum_boundary = ((batch_idx + 1) % args.grad_accumulation_steps == 0) or is_epoch_last or is_limited_last
+                if is_accum_boundary:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+                    optimizer.step()
+                    optimizer.zero_grad(set_to_none=True)
+
+                is_step_boundary = step_metrics.batch_count >= args.batches_per_step
                 if is_step_boundary or is_epoch_last or is_limited_last:
                     train_step += 1
                     train_metrics = step_metrics.compute()

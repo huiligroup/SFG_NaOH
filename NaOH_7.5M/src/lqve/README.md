@@ -118,8 +118,8 @@ python NaOH_7.5M/src/lqve/scripts/02_build_embedded_geometries.py \
   --system-xyz NaOH_7.5M/src/lqve/data/processed/frame.xyz \
   --probe-indices 444,445,446 \
   --reference-library NaOH_7.5M/src/lqve/references/reference_library.json \
-  --checkpoint NaOH_7.5M/visnet/runs/visnet_2/best.pt \
-  --feature-data NaOH_7.5M/data/visnet/na12_ab.pkl \
+  --checkpoint NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt \
+  --feature-data NaOH_7.5M/data/visnet/naoh12.pkl \
   --frame-index 0 \
   --output-dir NaOH_7.5M/src/lqve/data/embedded_geometries/frame_000000
 ```
@@ -146,7 +146,7 @@ Example ViSNet energy command:
 python NaOH_7.5M/src/lqve/scripts/03_run_qc_energies.py \
   --geometries NaOH_7.5M/src/lqve/data/embedded_geometries/one_cl_9115 \
   --backend visnet \
-  --checkpoint NaOH_7.5M/visnet/runs/visnet_2/best.pt \
+  --checkpoint NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt \
   --cell 16.63,16.63,44.10 \
   --device cuda \
   --batch-size 16 \

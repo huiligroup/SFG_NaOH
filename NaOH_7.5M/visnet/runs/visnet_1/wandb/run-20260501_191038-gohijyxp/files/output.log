@@ -1,1 +1,0 @@
-dataset train_frames=6494 val_frames=812 frame_stride=4 edge_data=NaOH_7.5M/data/visnet/na12_ab_edges_cutoff6.0.pt

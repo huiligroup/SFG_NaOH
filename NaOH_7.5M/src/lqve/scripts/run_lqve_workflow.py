@@ -17,7 +17,7 @@ from lqve.workflow import WorkflowConfig, run_lqve_workflow
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run DVR -> embedding -> energy -> shift and write one frequency CSV.")
-    parser.add_argument("--config", type=Path, required=True, help="End-to-end workflow JSON config.")
+    parser.add_argument("--config", type=Path, required=True, help="End-to-end workflow TOML or JSON config.")
     parser.add_argument("--run-name", default=None, help="Override run_name from config.")
     parser.add_argument("--limit-frames", type=int, default=None, help="Override limit_frames for smoke testing.")
     parser.add_argument("--no-resume", action="store_true", help="Disable resume and recompute missing steps.")
@@ -27,7 +27,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    raw = WorkflowConfig.from_json(args.config).to_dict()
+    raw = WorkflowConfig.from_file(args.config).to_dict()
     if args.run_name is not None:
         raw["run_name"] = args.run_name
     if args.limit_frames is not None:

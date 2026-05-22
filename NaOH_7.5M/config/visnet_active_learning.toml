@@ -1,0 +1,193 @@
+# ViSNet-eIP online active learning config.
+# Recommended first run:
+#   bash NaOH_7.5M/scripts/run_visnet_active_learning.sh
+
+[model]
+# Trained ViSNet-eIP checkpoint used for ASE MD, uncertainty evaluation, and warm-start retraining.
+checkpoint = "NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt"
+
+# Device used by the online MD calculator.
+device = "cuda"
+
+# Reserved batch-size knob for future batched inference extensions.
+batch_size = 1
+
+[md]
+# Starting structure for the online MD trajectory. This can be a single-frame or multi-frame XYZ.
+initial_xyz = "NaOH_7.5M/data/NVE/NaOH12/NaOH-12-pos-1.xyz"
+
+# Frame index used when initial_xyz contains multiple frames.
+initial_frame = 0
+
+# Fixed periodic simulation cell. Use either 3 box lengths or a full 3x3 matrix.
+cell = [16.63, 16.63, 44.10]
+
+# Integrator name. v1 only implements Langevin.
+integrator = "langevin"
+
+# Target thermostat temperature in Kelvin.
+temperature_k = 300.0
+
+# MD timestep in femtoseconds.
+timestep_fs = 0.5
+
+# Langevin friction coefficient. Tune this to control damping strength.
+friction = 0.01
+
+# Number of unbiased warm-up MD steps used to calibrate the uncertainty baseline.
+warmup_steps = 2000
+
+# Maximum MD steps executed in one active-learning round, including warm-up.
+steps_per_round = 5000
+
+# Maximum number of active-learning rounds before the workflow stops.
+max_rounds = 1
+
+# Evaluate uncertainty and candidate-trigger conditions every N MD steps.
+eval_interval = 10
+
+# Write the ASE trajectory every N MD steps.
+trajectory_interval = 10
+
+# Frequency of CSV logging. Keep this aligned with eval_interval unless you want coarser logs.
+log_interval = 10
+
+# Optional random seed for initial velocity generation.
+seed = 12345
+
+[udd]
+# Strength of the uncertainty-driven bias in eV. Larger values push the dynamics more aggressively into uncertain regions.
+lambda_bias_ev = 0.05
+
+# Warm-up uncertainty quantile used as the reference level u_ref.
+reference_quantile = 0.90
+
+# Candidate trigger threshold is u_ref + threshold_sigma * u_scale.
+threshold_sigma = 2.0
+
+# Number of consecutive evaluations above threshold required before saving a candidate.
+threshold_hits = 3
+
+# Power used to aggregate per-atom uncertainty into a frame-level uncertainty.
+aggregator_power = 8.0
+
+# Small numerical floor used in uncertainty aggregation and scaling.
+epsilon = 1.0e-8
+
+[selection]
+# Number of representative candidate frames to accumulate before pausing MD for labeling.
+batch_query_size = 20
+
+# Cooldown in MD steps between accepted candidates.
+cooldown_steps = 100
+
+# Minimum standardized feature distance used to reject near-duplicate candidates online.
+min_feature_distance = 1.0e-6
+
+[cp2k]
+# CP2K template input. The workflow rewrites PROJECT, RUN_TYPE, CELL, and COORD blocks for each selected frame.
+template_source = "NaOH_7.5M/data/NVE/NaOH12/NaOH12.inp"
+
+# Labeling execution mode:
+# mock   -> reuse current model predictions for smoke tests
+# direct -> run CP2K immediately in the current process
+# slurm  -> submit one CP2K job per selected frame
+execution = "direct"
+
+# CP2K executable command used on the server for direct labeling.
+# This command already contains the MPI launcher, so nproc stays at 1 below
+# to avoid wrapping it a second time.
+command = "mpirun -np 8 cp2k.psmp"
+
+# MPI process count added automatically only when command does not already
+# contain mpirun/srun. Keep this at 1 when command already includes -np.
+nproc = 1
+
+# Keep per-frame CP2K work directories after success/failure.
+keep_workdirs = true
+
+# SLURM submit command used when execution = "slurm".
+submit_command = "sbatch"
+
+# Poll interval in seconds when waiting for SLURM jobs.
+poll_interval_seconds = 30.0
+
+# Maximum wait time for all SLURM labeling jobs in one round.
+max_wait_seconds = 86400.0
+
+# Extra SBATCH directives, e.g. ["--partition=cpu", "--time=02:00:00"].
+sbatch_args = []
+
+[retrain]
+# Base supervised dataset that new labeled frames are appended to after each round.
+base_data = "NaOH_7.5M/data/visnet/naoh12.pkl"
+
+# Number of retraining epochs per active-learning round.
+epochs = 20
+
+# Supervised training batch size for the retraining phase.
+batch_size = 4
+
+# Number of retraining micro-batches accumulated before one optimizer step.
+grad_accumulation_steps = 4
+
+# Learning rate for warm-start retraining.
+lr = 1.0e-4
+
+# Device used by retraining.
+device = "cuda"
+
+# Frame downsampling factor used by train.py on the augmented dataset.
+frame_stride = 4
+
+# Early-stopping patience in validation checks.
+early_stopping_patience = 10
+
+# Minimum improvement required to reset early-stopping patience.
+early_stopping_min_delta = 0.0
+
+# Number of train batches aggregated into one logging step.
+batches_per_step = 100
+
+# Run validation every N logging steps.
+val_interval_steps = 10
+
+# Optional train-batch limiter for smoke tests. Uncomment for a short roundtrip.
+# limit_batches = 4
+
+# Optional validation-batch limiter for smoke tests.
+# limit_val_batches = 2
+
+# Gradient clipping threshold for retraining.
+grad_clip = 10.0
+
+# Activation checkpointing during retraining reduces GPU memory at the cost of extra compute.
+gradient_checkpointing = true
+
+# Build or refresh precomputed PBC neighbor lists for the augmented dataset before retraining.
+build_edges_if_missing = true
+
+# Enable wandb logging during retraining.
+wandb = false
+
+# wandb project name used when wandb = true.
+wandb_project = "naoh-visnet-active-learning"
+
+# Optional wandb run name for retraining jobs.
+# wandb_name = "naoh12_active_round"
+
+[output]
+# Output run name. All active-learning rounds will be written under data/active_learning/<run_name>/.
+run_name = "naoh12_visnet_active_learning"
+
+# Root directory for all active-learning artifacts.
+root_dir = "NaOH_7.5M/data/active_learning"
+
+# Resume from a previously written workflow_state.json if it exists.
+resume = true
+
+# Delete the existing run directory before starting. Must not be true together with resume.
+overwrite = false
+
+# Keep round directories, candidate pools, CP2K jobs, and retraining logs.
+keep_intermediates = true

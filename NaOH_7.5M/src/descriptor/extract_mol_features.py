@@ -19,8 +19,8 @@ if str(ROOT) not in sys.path:
 from visnet.model import VisNetEIP  # noqa: E402
 
 
-DEFAULT_DATA = ROOT / "data" / "visnet" / "na12_ab.pkl"
-DEFAULT_CHECKPOINT = ROOT / "visnet" / "runs" / "visnet_2" / "best.pt"
+DEFAULT_DATA = ROOT / "data" / "visnet" / "naoh12.pkl"
+DEFAULT_CHECKPOINT = ROOT / "visnet" / "runs" / "naoh12_visnet" / "best.pt"
 DEFAULT_OUTPUT = ROOT / "src" / "descriptor" / "mol_features.pkl"
 
 
@@ -49,10 +49,10 @@ def parse_mol_ids(raw: str, max_mol_id: int) -> list[int]:
 
 
 def build_default_molecules(species: np.ndarray) -> list[dict[str, object]]:
-    """Return fixed molecule definitions for the Na12 trajectory atom order."""
+    """Return fixed molecule definitions for the NaOH12 trajectory atom order."""
 
     if len(species) != 480:
-        raise ValueError(f"Expected 480 atoms for Na12, got {len(species)}")
+        raise ValueError(f"Expected 480 atoms for NaOH12, got {len(species)}")
     molecules: list[dict[str, object]] = []
     for mol_id in range(148):
         atom_indices = [3 * mol_id, 3 * mol_id + 1, 3 * mol_id + 2]

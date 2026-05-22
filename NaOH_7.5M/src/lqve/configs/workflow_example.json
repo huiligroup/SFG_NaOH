@@ -1,5 +1,5 @@
 {
-  "run_name": "na12_lqve_dynamic_visnet",
+  "run_name": "naoh12_lqve_dynamic_visnet",
   "lqve_root": "NaOH_7.5M/src/lqve",
   "dynamic_reference": true,
   "resume": true,
@@ -12,7 +12,7 @@
       "pes": "NaOH_7.5M/src/lqve_old/get_DVR_points/energy_9115_minus_1_to_1_8000.dat",
       "reference_xyz": "NaOH_7.5M/src/lqve/references/structures/example_ref_0001.xyz",
       "modes": "NaOH_7.5M/src/lqve/references/modes/example_ref_0001_modes.npy",
-      "feature_file": "NaOH_7.5M/src/descriptor/represent_mol/rank_0001_mol_001_traj_a_frame_00024524/feature.npy",
+      "feature_file": "NaOH_7.5M/src/descriptor/represent_mol/<new_reference>/feature.npy",
       "grid_unit": "bohr",
       "mode_unit": "angstrom_per_bohr",
       "dvr": {
@@ -49,11 +49,11 @@
   ],
   "trajectories": [
     {
-      "traj_id": "na12_a",
-      "path": "NaOH_7.5M/src/lqve/data/processed/na12_a.xyz",
+      "traj_id": "NaOH12",
+      "path": "NaOH_7.5M/data/NVE/NaOH12/NaOH-12-pos-1.xyz",
       "probe_indices": [444, 445, 446],
       "mol_id": 148,
-      "feature_data": "NaOH_7.5M/data/visnet/na12_ab.pkl",
+      "feature_data": "NaOH_7.5M/data/visnet/naoh12.pkl",
       "frame_start": 0,
       "frame_stop": null,
       "frame_stride": 1,
@@ -62,7 +62,7 @@
   ],
   "reference_selection": {
     "enabled": true,
-    "checkpoint": "NaOH_7.5M/visnet/runs/visnet_2/best.pt",
+    "checkpoint": "NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt",
     "device": "cuda",
     "top_k": 5
   },
@@ -75,7 +75,7 @@
   },
   "energy": {
     "backend": "visnet",
-    "checkpoint": "NaOH_7.5M/visnet/runs/visnet_2/best.pt",
+    "checkpoint": "NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt",
     "device": "cuda",
     "cell": [16.63, 16.63, 44.10],
     "batch_size": 16,

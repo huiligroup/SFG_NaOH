@@ -1,0 +1,222 @@
+# End-to-end LQVE workflow config.
+# Copy this file, replace reference assets/checkpoints, then run:
+# python NaOH_7.5M/src/lqve/scripts/run_lqve_workflow.py --config NaOH_7.5M/config/lqve_workflow_example.toml
+
+# Name of this workflow run. It controls output subdirectories such as
+# data/workflows/<run_name>, data/shifts/<run_name>, and all_frequencies.csv.
+run_name = "naoh12_lqve_dynamic_visnet"
+
+# Root directory of the LQVE package and its data/results folders.
+lqve_root = "NaOH_7.5M/src/lqve"
+
+# true: choose the nearest reference for each trajectory frame using ViSNet features.
+# false: use the explicit reference_id assigned to each trajectory, or the only reference.
+dynamic_reference = true
+
+# true: reuse already generated DVR/embedding/QC/shift outputs when they exist.
+resume = true
+
+# true: delete workflow-owned outputs for this run before recomputing.
+# Must not be true at the same time as resume.
+overwrite = false
+
+# true: keep per-frame embedding, QC, and shift directories after producing the final CSV.
+# false can reduce disk usage in long production runs.
+keep_intermediates = true
+
+# Optional global smoke-test limiter. Uncomment to process only the first N selected frames.
+# limit_frames = 1
+
+# A reference entry describes one precomputed or buildable reference PES/DVR/wavefunction set.
+[[references]]
+# Unique reference name. This is written into selected_reference.json and all_frequencies.csv.
+reference_id = "example_ref_0001"
+
+# Reference potential energy surface table used to build DVR and reference grid energies.
+pes = "NaOH_7.5M/src/lqve_old/get_DVR_points/energy_9115_minus_1_to_1_8000.dat"
+
+# Isolated/reference probe molecule geometry used by embedding.
+reference_xyz = "NaOH_7.5M/src/lqve/references/structures/example_ref_0001.xyz"
+
+# Vibrational mode matrix for this reference. Supported by the embedding loader, usually .npy.
+modes = "NaOH_7.5M/src/lqve/references/modes/example_ref_0001_modes.npy"
+
+# ViSNet molecule feature for this reference. Required when dynamic_reference = true.
+feature_file = "NaOH_7.5M/src/descriptor/represent_mol/<new_reference>/feature.npy"
+
+# Unit of the DVR grid coordinates read from dvr_result.npz.
+grid_unit = "bohr"
+
+# Unit convention of the mode vectors. For this workflow, angstrom_per_bohr means
+# embedded displacement in Angstrom = DVR coordinate in Bohr * mode vector.
+mode_unit = "angstrom_per_bohr"
+
+# DVR solver settings for this reference.
+[references.dvr]
+# Number of low-energy DVR eigenstates to save and use downstream.
+states = 80
+
+# Coordinate unit of the mode ranges below.
+coord_unit = "angstrom"
+
+# Energy unit of the PES table.
+energy_unit = "cm-1"
+
+# Use dense diagonalization below this PODVR basis size; use sparse eigensolver above it.
+dense_threshold = 512
+
+# Numerical tolerance passed to the sparse eigensolver.
+solver_tol = 1.0e-10
+
+# One DVR mode definition. Add more [[references.dvr.modes]] blocks for higher dimension.
+[[references.dvr.modes]]
+# Human-readable mode name; must be unique within this reference.
+name = "q1"
+
+# Lower coordinate bound for this mode, in coord_unit.
+lower = -0.7
+
+# Upper coordinate bound for this mode, in coord_unit.
+upper = 0.7
+
+# Number of initial 1D SINC-DVR grid points used before PODVR contraction.
+sinc_points = 200
+
+# Number of PODVR basis/grid points retained for this mode.
+podvr_points = 7
+
+[[references.dvr.modes]]
+# Human-readable mode name; must be unique within this reference.
+name = "q2"
+
+# Lower coordinate bound for this mode, in coord_unit.
+lower = -0.9
+
+# Upper coordinate bound for this mode, in coord_unit.
+upper = 0.9
+
+# Number of initial 1D SINC-DVR grid points used before PODVR contraction.
+sinc_points = 200
+
+# Number of PODVR basis/grid points retained for this mode.
+podvr_points = 10
+
+[[references.dvr.modes]]
+# Human-readable mode name; must be unique within this reference.
+name = "q3"
+
+# Lower coordinate bound for this mode, in coord_unit.
+lower = -0.6
+
+# Upper coordinate bound for this mode, in coord_unit.
+upper = 0.6
+
+# Number of initial 1D SINC-DVR grid points used before PODVR contraction.
+sinc_points = 200
+
+# Number of PODVR basis/grid points retained for this mode.
+podvr_points = 7
+
+# A trajectory entry describes one AIMD trajectory to process frame by frame.
+[[trajectories]]
+# Name written to output CSV and frame directories.
+traj_id = "NaOH12"
+
+# Multi-frame XYZ trajectory to process.
+path = "NaOH_7.5M/data/NVE/NaOH12/NaOH-12-pos-1.xyz"
+
+# Fixed atom indices of the probe molecule in the trajectory.
+probe_indices = [444, 445, 446]
+
+# Optional molecule id using the descriptor module's fixed molecule numbering.
+# Used for dynamic feature extraction when probe_indices are not the most convenient input.
+mol_id = 148
+
+# Optional preprocessed ViSNet dataset. When provided, query features can be extracted
+# from this pkl instead of reparsing the XYZ/cell for every frame.
+feature_data = "NaOH_7.5M/data/visnet/naoh12.pkl"
+
+# First trajectory frame index to process.
+frame_start = 0
+
+# Optional exclusive stop frame. Uncomment to process a finite frame window.
+# frame_stop = 100
+
+# Process every Nth frame after frame_start.
+frame_stride = 1
+
+# Orthorhombic cell lengths, or a full 3x3 cell matrix. Required for ViSNet feature/energy.
+cell = [16.63, 16.63, 44.10]
+
+# Dynamic reference-selection settings.
+[reference_selection]
+# true: enable ViSNet feature extraction and nearest-reference search.
+enabled = true
+
+# Checkpoint used to extract query features. Must match the feature_file generation checkpoint.
+checkpoint = "NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt"
+
+# Device for feature extraction, e.g. cuda or cpu.
+device = "cuda"
+
+# Number of nearest reference candidates to record in selected_reference.json.
+top_k = 5
+
+# DVR embedding settings.
+[embedding]
+# Unit of DVR grid coordinates when embedding into Cartesian structures.
+grid_unit = "bohr"
+
+# Unit convention of mode vectors.
+mode_unit = "angstrom_per_bohr"
+
+# Weighting used for centroid removal and Kabsch alignment; mass is the physical default.
+centroid_weight = "mass"
+
+# true: write one XYZ per DVR grid geometry. Keep false for large production runs.
+write_xyz = false
+
+# Filename prefix used if write_xyz = true.
+prefix = "embedded"
+
+# Energy backend settings for the embedded DVR geometries.
+[energy]
+# Energy backend. Use visnet for neural-network inference, mock for smoke tests,
+# or xtb/gaussian/cp2k for external quantum chemistry backends.
+backend = "visnet"
+
+# ViSNet checkpoint for the visnet backend.
+checkpoint = "NaOH_7.5M/visnet/runs/naoh12_visnet/best.pt"
+
+# Device for the energy backend.
+device = "cuda"
+
+# Periodic simulation cell for full-box ViSNet energy prediction.
+cell = [16.63, 16.63, 44.10]
+
+# Number of embedded DVR geometries evaluated per model forward pass.
+batch_size = 16
+
+# Number of worker processes for external backends. For visnet, keep this at 1.
+workers = 1
+
+# Optional geometry limiter for smoke tests. Uncomment to evaluate only first N DVR points.
+# limit_geometries = 2
+
+# true: keep external QC temporary work directories. For visnet this has no effect.
+keep_workdirs = false
+
+# Shift/effective-Hamiltonian settings.
+[shift]
+# Number of reference DVR states used to contract the effective Hamiltonian.
+n_contract = 30
+
+# Number of transition frequencies and shifts to write for each frame.
+n_transitions = 6
+
+# true: remove the mean perturbation energy so absolute environment energy offsets
+# do not shift all levels uniformly.
+subtract_mean = true
+
+# Optional key/column for reference energy files with multiple arrays or columns.
+# reference_key = "energy_hartree"

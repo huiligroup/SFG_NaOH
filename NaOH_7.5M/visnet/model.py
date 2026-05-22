@@ -5,6 +5,7 @@ from __future__ import annotations
 import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
+from torch.utils.checkpoint import checkpoint as activation_checkpoint
 
 try:
     from .data.neighbors import build_neighbor_list, edge_vectors_from_shifts
@@ -84,6 +85,7 @@ class VisNetEIP(nn.Module):
         max_num_neighbors: int = 64,
         mean: float = 0.0,
         std: float = 1.0,
+        gradient_checkpointing: bool = False,
     ) -> None:
         super().__init__()
         try:
@@ -113,6 +115,39 @@ class VisNetEIP(nn.Module):
         )
         self.backbone.representation_model.distance = self.pbc_distance
         self.evidential_head = EvidentialHead(hidden_channels=hidden_channels)
+        self.gradient_checkpointing = bool(gradient_checkpointing)
+
+    def _run_vis_mp_layer(
+        self,
+        attn: nn.Module,
+        x: Tensor,
+        vec: Tensor,
+        edge_index: Tensor,
+        edge_weight: Tensor,
+        edge_attr: Tensor,
+        edge_sh: Tensor,
+    ) -> tuple[Tensor, Tensor, Tensor]:
+        if not (self.gradient_checkpointing and self.training):
+            return attn(x, vec, edge_index, edge_weight, edge_attr, edge_sh)
+
+        def layer_forward(
+            x_in: Tensor,
+            vec_in: Tensor,
+            edge_weight_in: Tensor,
+            edge_attr_in: Tensor,
+            edge_sh_in: Tensor,
+        ) -> tuple[Tensor, Tensor, Tensor]:
+            return attn(x_in, vec_in, edge_index, edge_weight_in, edge_attr_in, edge_sh_in)
+
+        return activation_checkpoint(
+            layer_forward,
+            x,
+            vec,
+            edge_weight,
+            edge_attr,
+            edge_sh,
+            use_reentrant=False,
+        )
 
     def _representation(self, z: Tensor, pos: Tensor, batch: Tensor) -> tuple[Tensor, Tensor]:
         """Run PyG's ViSNetBlock with the edge-vector normalization made functional.
@@ -142,12 +177,12 @@ class VisNetEIP(nn.Module):
         edge_attr = rep.edge_embedding(edge_index, edge_attr, x)
 
         for attn in rep.vis_mp_layers[:-1]:
-            dx, dvec, dedge_attr = attn(x, vec, edge_index, edge_weight, edge_attr, edge_sh)
+            dx, dvec, dedge_attr = self._run_vis_mp_layer(attn, x, vec, edge_index, edge_weight, edge_attr, edge_sh)
             x = x + dx
             vec = vec + dvec
             edge_attr = edge_attr + dedge_attr
 
-        dx, dvec, _ = rep.vis_mp_layers[-1](x, vec, edge_index, edge_weight, edge_attr, edge_sh)
+        dx, dvec, _ = self._run_vis_mp_layer(rep.vis_mp_layers[-1], x, vec, edge_index, edge_weight, edge_attr, edge_sh)
         x = x + dx
         vec = vec + dvec
 
@@ -163,6 +198,8 @@ class VisNetEIP(nn.Module):
         cell: Tensor,
         edge_index: Tensor | None = None,
         cell_shift: Tensor | None = None,
+        create_graph: bool | None = None,
+        retain_graph: bool | None = None,
     ) -> dict[str, Tensor]:
         pos = pos.requires_grad_(True)
         self.pbc_distance.set_graph(cell=cell, edge_index=edge_index, cell_shift=cell_shift)
@@ -173,12 +210,16 @@ class VisNetEIP(nn.Module):
             atom_energy = self.backbone.prior_model(atom_energy, z)
         energy = self.scatter(atom_energy, batch, dim=0, reduce=self.backbone.reduce_op)
         energy = energy + self.backbone.mean
+        if create_graph is None:
+            create_graph = bool(self.training)
+        if retain_graph is None:
+            retain_graph = bool(create_graph)
         grad = torch.autograd.grad(
             [energy],
             [pos],
             grad_outputs=[torch.ones_like(energy)],
-            create_graph=self.training,
-            retain_graph=True,
+            create_graph=create_graph,
+            retain_graph=retain_graph,
         )[0]
         if grad is None:
             raise RuntimeError("Autograd returned None for force prediction")

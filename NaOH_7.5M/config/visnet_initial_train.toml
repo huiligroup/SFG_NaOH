@@ -1,0 +1,164 @@
+# ViSNet-eIP initial supervised training config.
+# Recommended entrypoint:
+#   bash NaOH_7.5M/scripts/train_visnet_initial.sh
+
+[preprocess]
+# Root directory containing one or more CP2K trajectory subdirectories such as NaOH12/.
+source_root = "NaOH_7.5M/data/NVE"
+
+# Output pickle path written by preprocess.py. This should match [train].data below.
+output = "NaOH_7.5M/data/visnet/naoh12.pkl"
+
+# Trajectory subdirectories to merge into the supervised dataset.
+trajectories = ["NaOH12"]
+
+# Whether to cross-check XYZ comment energies against the .ener table.
+energy_check = true
+
+[edges]
+# Whether to precompute GPUMD-style neighbor lists before training.
+enabled = true
+
+# If a compatible edge cache already exists at output, the pipeline reuses it automatically.
+# Rebuild happens only when the dataset file or edge parameters no longer match.
+
+# Output path for the precomputed edge store. This should match [train].edge_data below.
+output = "NaOH_7.5M/data/visnet/naoh12_edges_cutoff6.0.pt"
+
+# Radial cutoff used to build the neighbor list, in Angstrom.
+cutoff = 6.0
+
+# Per-atom neighbor cap used during edge construction.
+max_num_neighbors = 64
+
+# Temporal stride used when precomputing train/val/test neighbor lists.
+frame_stride = 1
+
+# Dataset splits included in the precomputed edge file.
+splits = ["train", "val", "test"]
+
+# Optional hard cap on the number of frames for smoke tests. Leave commented for production.
+# limit = 100
+
+# Number of CPU worker processes used during edge precomputation.
+num_workers = 8
+
+[train]
+# Training dataset path. Keep this aligned with [preprocess].output.
+data = "NaOH_7.5M/data/visnet/naoh12.pkl"
+
+# Output directory for checkpoints, metrics, and validation uncertainty reports.
+output_dir = "NaOH_7.5M/visnet/runs/naoh12_visnet"
+
+# Number of epochs for the initial supervised fit.
+epochs = 1000
+
+# Optional limit on train batches per epoch for smoke tests.
+# limit_batches = 4
+
+# Optional limit on validation batches for smoke tests.
+# limit_val_batches = 2
+
+# Optional limit on frame count before DataLoader construction.
+# limit_frames = 128
+
+# Frame downsampling factor applied during training.
+frame_stride = 1
+
+# Physical micro-batch size used by train.py. For the 480-atom NaOH12 box,
+# keep this conservative and recover an effective larger batch with
+# grad_accumulation_steps below.
+batch_size = 4
+
+# Number of micro-batches accumulated before one optimizer step.
+grad_accumulation_steps = 8
+
+# Optimizer learning rate.
+lr = 1.0e-4
+
+# Relative weight on the evidential force loss.
+force_weight = 1.0
+
+# Regularization weight that penalizes overconfident evidence on bad force predictions.
+reg_weight = 1.0e-2
+
+# Quantile used by the evidential force likelihood.
+quantile = 0.5
+
+# Hidden feature width of the ViSNet backbone.
+hidden_channels = 64
+
+# Number of message-passing layers. This is the main depth knob.
+num_layers = 6
+
+# Attention head count in ViSNet.
+num_heads = 8
+
+# Number of radial basis functions.
+num_rbf = 32
+
+# Training-time neighbor cutoff, in Angstrom.
+cutoff = 6.0
+
+# Training-time neighbor cap per atom.
+max_num_neighbors = 64
+
+# Precomputed edge store path. Keep this aligned with [edges].output when [edges].enabled = true.
+edge_data = "NaOH_7.5M/data/visnet/naoh12_edges_cutoff6.0.pt"
+
+# Fallback: build missing edge_data on demand inside train.py.
+build_edges_if_missing = false
+
+# Optional edge build limit for emergency smoke tests when train.py must build edges itself.
+# edge_build_limit = 128
+
+# Gradient clipping threshold.
+grad_clip = 10.0
+
+# Activation checkpointing trades extra compute for much lower GPU memory.
+gradient_checkpointing = true
+
+# Training device.
+device = "cuda"
+
+# Number of train batches aggregated into one logging step.
+batches_per_step = 100
+
+# Validation frequency in logging steps.
+val_interval_steps = 10
+
+# Disable validation entirely. Keep false for production training.
+no_val = false
+
+# Early stopping patience measured in validation checks.
+early_stopping_patience = 20
+
+# Minimum improvement needed to reset early stopping.
+early_stopping_min_delta = 0.0
+
+# Metric monitored by early stopping and best.pt selection.
+early_stopping_monitor = "val/force_mae"
+
+# Enable Weights & Biases logging.
+wandb = true
+
+# wandb project name.
+wandb_project = "naoh-visnet-eip"
+
+# Optional wandb entity / team.
+# wandb_entity = "your-team"
+
+# Optional explicit wandb run name.
+wandb_name = "naoh12_visnet"
+
+# wandb backend mode: online, offline, or disabled.
+wandb_mode = "online"
+
+# Whether to record gradients / parameters with wandb.watch.
+wandb_watch = false
+
+# wandb.watch verbosity.
+wandb_watch_log = "gradients"
+
+# Optional warm-start checkpoint. Leave commented for the initial fit from scratch.
+# init_checkpoint = "NaOH_7.5M/visnet/runs/older_model/best.pt"
